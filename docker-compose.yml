@@ -1,0 +1,44 @@
+version: '3.8' # You can remove this line to get rid of the warning, but it's not causing this error.
+
+services:
+  db:
+    image: postgres:15
+    container_name: agenda_db
+    restart: always
+    environment:
+      POSTGRES_USER: agenda_user
+      POSTGRES_PASSWORD: agenda_password
+      POSTGRES_DB: agenda_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./pg_data_agenda_host:/var/lib/postgresql/data
+    networks:
+      - agenda_network # This service uses this network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_agenda
+    restart: always
+    ports:
+      - "8084:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@agenda.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+      PGADMIN_LISTEN_PORT: 80
+    networks:
+      - agenda_network # This service also uses this network
+    depends_on:
+      - db
+
+# Define the network here, at the same indentation level as 'services:'
+networks:
+  agenda_network:
+    driver: bridge
