@@ -1,0 +1,68 @@
+// ~/Documents/web/Agenda-AI/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo para la tabla 'users'
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(50)
+  email     String   @unique @db.VarChar(100)
+  password  String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Relaciones inversas: un usuario puede tener muchos eventos y muchas tareas
+  // Esto asegura que cada usuario tenga sus propios eventos y tareas aislados.
+  events    Event[]
+  tasks     Task[]
+
+  @@map("users") // Mapea el modelo Prisma 'User' a la tabla SQL 'users'
+}
+
+// Modelo para la tabla 'events'
+model Event {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @map("user_id") // Campo de clave foránea que mapea a 'user_id' en la DB
+  title        String    @db.VarChar(255)
+  description  String?   @db.Text
+  location     String?   @db.VarChar(255)
+  startTime    DateTime  @map("start_time") @db.Timestamptz(6)
+  endTime      DateTime? @map("end_time") @db.Timestamptz(6)
+  isAllDay     Boolean   @default(false) @map("is_all_day")
+  reminderTime DateTime? @map("reminder_time") @db.Timestamptz(6)
+  category     String?   @db.VarChar(100)
+  priority     Int       @default(0) // INTEGER DEFAULT 0 en SQL significa que no es nullable
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Relación con el modelo User (conexión directa para 'user_id')
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("events") // Mapea el modelo Prisma 'Event' a la tabla SQL 'events'
+}
+
+// Modelo para la tabla 'tasks'
+model Task {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id") // Campo de clave foránea que mapea a 'user_id' en la DB
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  dueDate     DateTime? @map("due_date") @db.Date
+  // CAMBIO AQUÍ: 'due_time' de TIME WITH TIME ZONE a String? en Prisma.
+  // Es la forma más compatible para representar el componente de tiempo puro con TZ en Prisma.
+  dueTime     String?   @map("due_time")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  priority    Int       @default(0) // INTEGER DEFAULT 0 en SQL significa que no es nullable
+  category    String?   @db.VarChar(100)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Relación con el modelo User (conexión directa para 'user_id')
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tasks") // Mapea el modelo Prisma 'Task' a la tabla SQL 'tasks'
+}

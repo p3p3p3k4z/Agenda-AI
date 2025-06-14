@@ -1,15 +1,20 @@
--- Eliminar tablas si existen para empezar limpio (solo para desarrollo)
-DROP TABLE IF EXISTS events;
-DROP TABLE IF EXISTS tasks;
-DROP TABLE IF EXISTS users;
+-- ~/Documents/web/Agenda-AI/init.sql
 
--- Tabla de Usuarios (con contraseña en texto plano para simplificación)
+-- Eliminar tablas si existen para empezar limpio.
+-- Usamos CASCADE para asegurar que las dependencias (eventos, tareas)
+-- que referencian a 'users' se eliminen antes de 'users'.
+DROP TABLE IF EXISTS events CASCADE;
+DROP TABLE IF EXISTS tasks CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- Tabla de Usuarios
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, -- Contraseña en texto plano
+    password VARCHAR(255) NOT NULL, -- Contraseña en texto plano (para fines escolares)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    -- Eliminamos 'updated_at' aquí, lo gestionará Prisma
 );
 
 -- Tabla de Eventos
@@ -25,8 +30,8 @@ CREATE TABLE events (
     reminder_time TIMESTAMP WITH TIME ZONE,
     category VARCHAR(100),
     priority INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    -- Eliminamos 'updated_at' aquí, lo gestionará Prisma
 );
 
 -- Tabla de Tareas
@@ -40,34 +45,17 @@ CREATE TABLE tasks (
     is_completed BOOLEAN DEFAULT FALSE,
     priority INTEGER DEFAULT 0,
     category VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    -- Eliminamos 'updated_at' aquí, lo gestionará Prisma
 );
 
--- Función para actualizar la columna updated_at automáticamente
--- Esta función sigue siendo útil para saber cuándo se modificó un registro por última vez.
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- INSERCIÓN DE DATOS DE EJEMPLO
+-- NOTA: Si usas SERIAL PRIMARY KEY, no necesitas especificar el 'id'
+-- en el INSERT INTO, PostgreSQL lo asignará automáticamente (1, 2, etc.).
+-- Si especificas el ID (ej. (1, 'usuario_agenda',...)), entonces asegúrate
+-- de que esos IDs no estén en conflicto con secuencias existentes.
+-- Para simplicidad en este contexto, lo mantendremos como lo tenías.
 
--- Trigger para actualizar updated_at en events
-CREATE TRIGGER update_events_updated_at
-BEFORE UPDATE ON events
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
--- Trigger para actualizar updated_at en tasks
-CREATE TRIGGER update_tasks_updated_at 
-BEFORE UPDATE ON tasks
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-
--- Inserción de datos de ejemplo (con contraseñas en texto plano)
 INSERT INTO users (username, email, password) VALUES
 ('usuario_agenda', 'usuario@example.com', 'password123'),
 ('ana_perez', 'ana.perez@example.com', 'mypassword');
