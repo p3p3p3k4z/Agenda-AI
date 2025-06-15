@@ -49,20 +49,18 @@ model Event {
 // Modelo para la tabla 'tasks'
 model Task {
   id          Int       @id @default(autoincrement())
-  userId      Int       @map("user_id") // Campo de clave foránea que mapea a 'user_id' en la DB
-  title       String    @db.VarChar(255)
-  description String?   @db.Text
+  userId      Int       @map("user_id")
+  title       String
+  description String?
   dueDate     DateTime? @map("due_date") @db.Date
-  // CAMBIO AQUÍ: 'due_time' de TIME WITH TIME ZONE a String? en Prisma.
-  // Es la forma más compatible para representar el componente de tiempo puro con TZ en Prisma.
-  dueTime     String?   @map("due_time")
-  isCompleted Boolean   @default(false) @map("is_completed")
-  priority    Int       @default(0) // INTEGER DEFAULT 0 en SQL significa que no es nullable
-  category    String?   @db.VarChar(100)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  // CAMBIO CLAVE AQUÍ: dueTime ahora es DateTime? y usa @db.Time(6)
+  dueTime     DateTime? @map("due_time") @db.Time(6) // TIMESTAMP WITH TIME ZONE -> DateTime?
+  isCompleted Boolean   @map("is_completed") @default(false)
+  priority    Int       @default(0)
+  category    String?
+  createdAt   DateTime  @map("created_at") @default(now())
 
-  // Relación con el modelo User (conexión directa para 'user_id')
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
-  @@map("tasks") // Mapea el modelo Prisma 'Task' a la tabla SQL 'tasks'
+  @@map("tasks")
 }

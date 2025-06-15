@@ -2,8 +2,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
+// Función auxiliar para formatear la hora (HH:MM:SS)
+function formatTime(date: Date | null): string | null {
+  if (!date) return null;
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const seconds = date.getSeconds().toString().padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+
 // GET /api/tasks/:id - Obtener una tarea específica por ID
-export async function GET(request: Request, { params }: { params: { id: string } }) { // CAMBIO AQUÍ
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = parseInt(params.id, 10);
     if (isNaN(id)) {
@@ -26,7 +36,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (!task) {
       return NextResponse.json({ message: 'Task not found.' }, { status: 404 });
     }
-    return NextResponse.json(task);
+
+    // Formatear dueTime a string HH:MM:SS para la respuesta
+    const formattedTask = {
+      ...task,
+      dueTime: formatTime(task.dueTime),
+    };
+
+    return NextResponse.json(formattedTask);
   } catch (error: any) {
     console.error('Error fetching task by ID:', error);
     return NextResponse.json({ message: 'Error fetching task data.', error: error.message }, { status: 500 });
@@ -34,7 +51,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // PUT /api/tasks/:id - Actualizar una tarea por ID
-export async function PUT(request: Request, { params }: { params: { id: string } }) { // CAMBIO AQUÍ
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = parseInt(params.id, 10);
     if (isNaN(id)) {
@@ -42,7 +59,16 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
 
     const data = await request.json();
-    const { dueDate, ...rest } = data;
+    const { dueDate, dueTime, ...rest } = data; // Extraer dueTime
+
+    let parsedDueTime: Date | undefined | null = undefined;
+    if (dueTime !== undefined) {
+      if (dueTime === null) {
+        parsedDueTime = null; // Si se envía explícitamente null
+      } else {
+        parsedDueTime = new Date(`1970-01-01T${dueTime}`);
+      }
+    }
 
     const updatedTask = await prisma.task.update({
       where: { id },
@@ -50,7 +76,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         ...rest,
         userId: data.userId ? parseInt(data.userId, 10) : undefined,
         dueDate: dueDate ? new Date(dueDate) : undefined,
-        dueTime: data.dueTime !== undefined ? data.dueTime : undefined,
+        dueTime: parsedDueTime, // Pasa el objeto Date o null
         isCompleted: typeof data.isCompleted === 'boolean' ? data.isCompleted : undefined,
         priority: data.priority !== undefined ? parseInt(data.priority, 10) : undefined,
       },
@@ -64,7 +90,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       },
     });
 
-    return NextResponse.json(updatedTask);
+    // Formatear dueTime a string HH:MM:SS para la respuesta
+    const formattedUpdatedTask = {
+      ...updatedTask,
+      dueTime: formatTime(updatedTask.dueTime),
+    };
+
+    return NextResponse.json(formattedUpdatedTask);
   } catch (error: any) {
     console.error('Error updating task:', error);
     if (error.code === 'P2025') {
@@ -78,7 +110,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 // DELETE /api/tasks/:id - Eliminar una tarea por ID
-export async function DELETE(request: Request, { params }: { params: { id: string } }) { // CAMBIO AQUÍ
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     const id = parseInt(params.id, 10);
     if (isNaN(id)) {

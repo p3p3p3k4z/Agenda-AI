@@ -41,7 +41,7 @@ CREATE TABLE tasks (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     due_date DATE,
-    due_time TIME WITH TIME ZONE,
+    due_time VARCHAR(10),
     is_completed BOOLEAN DEFAULT FALSE,
     priority INTEGER DEFAULT 0,
     category VARCHAR(100),
